@@ -458,10 +458,10 @@ class RendererV3(object):
         hw = hw[alnum,:]
 
         min_h0, min_h = np.min(hw0[:,0]), np.min(hw[:,0])
-        asp0, asp = hw0[:,0]/(hw0[:,1]+1), hw[:,0]/(hw[:,1]+1)
+        asp0, asp = hw0[:,0]/hw0[:,1], hw[:,0]/hw[:,1]
         asp0, asp = np.median(asp0), np.median(asp)
 
-        asp_ratio = asp/(asp0 + 1)
+        asp_ratio = asp/asp0
         is_good = ( min_h > self.min_char_height
                     and asp_ratio > self.min_asp_ratio
                     and asp_ratio < 1.0/self.min_asp_ratio)
@@ -503,7 +503,6 @@ class RendererV3(object):
         else:
             text_mask,loc,bb,text = render_res
 
-        # cv2.imwrite("./text_mask.png", text_mask)
         # update the collision mask with text:
         collision_mask += (255 * (text_mask>0)).astype('uint8')
 
@@ -526,7 +525,6 @@ class RendererV3(object):
         im_final = self.colorizer.color(rgb,[text_mask],np.array([min_h]))
 
         return im_final, text, bb, collision_mask
-        # return text_mask, text, bb, collision_mask
 
 
     def get_num_text_regions(self, nregions):
