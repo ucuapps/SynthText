@@ -51,6 +51,7 @@ class FontColor(object):
             u.encoding = 'latin1'
             p = u.load()
             self.colorsRGB = p
+            self.colorsRGB = np.zeros(self.colorsRGB.shape)
         self.ncol = self.colorsRGB.shape[0]
 
         # convert color-means from RGB to LAB for better nearest neighbour
@@ -325,38 +326,38 @@ class Colorize(object):
         layers = [l_text]
         blends = []
 
-        # add border:
-        if np.random.rand() < self.p_border:
-            if min_h <= 15 : bsz = 1
-            elif 15 < min_h < 30: bsz = 3
-            else: bsz = 5
-            border_a = self.border(l_text.alpha, size=bsz)
-            l_border = Layer(border_a, self.color_border(l_text.color,l_bg.color))
-            layers.append(l_border)
-            blends.append('normal')
+        # # add border:
+        # if np.random.rand() < self.p_border:
+        #     if min_h <= 15 : bsz = 1
+        #     elif 15 < min_h < 30: bsz = 3
+        #     else: bsz = 5
+        #     border_a = self.border(l_text.alpha, size=bsz)
+        #     l_border = Layer(border_a, self.color_border(l_text.color,l_bg.color))
+        #     layers.append(l_border)
+        #     blends.append('normal')
 
-        # add shadow:
-        if np.random.rand() < self.p_drop_shadow:
-            # shadow gaussian size:
-            if min_h <= 15 : bsz = 1
-            elif 15 < min_h < 30: bsz = 3
-            else: bsz = 5
+        # # add shadow:
+        # if np.random.rand() < self.p_drop_shadow:
+        #     # shadow gaussian size:
+        #     if min_h <= 15 : bsz = 1
+        #     elif 15 < min_h < 30: bsz = 3
+        #     else: bsz = 5
 
-            # shadow angle:
-            theta = np.pi/4 * np.random.choice([1,3,5,7]) + 0.5*np.random.randn()
+        #     # shadow angle:
+        #     theta = np.pi/4 * np.random.choice([1,3,5,7]) + 0.5*np.random.randn()
 
-            # shadow shift:
-            if min_h <= 15 : shift = 2
-            elif 15 < min_h < 30: shift = 7+np.random.randn()
-            else: shift = 15 + 3*np.random.randn()
+        #     # shadow shift:
+        #     if min_h <= 15 : shift = 2
+        #     elif 15 < min_h < 30: shift = 7+np.random.randn()
+        #     else: shift = 15 + 3*np.random.randn()
 
-            # opacity:
-            op = 0.50 + 0.1*np.random.randn()
+        #     # opacity:
+        #     op = 0.50 + 0.1*np.random.randn()
 
-            shadow = self.drop_shadow(l_text.alpha, theta, shift, 3*bsz, op)
-            l_shadow = Layer(shadow, 0)
-            layers.append(l_shadow)
-            blends.append('normal')
+        #     shadow = self.drop_shadow(l_text.alpha, theta, shift, 3*bsz, op)
+        #     l_shadow = Layer(shadow, 0)
+        #     layers.append(l_shadow)
+        #     blends.append('normal')
         
 
         l_bg = Layer(alpha=255*np.ones_like(text_arr,'uint8'), color=bg_col)
@@ -366,7 +367,9 @@ class Colorize(object):
         # now do poisson image editing:
         l_bg = Layer(alpha=255*np.ones_like(text_arr,'uint8'), color=bg_arr)
         l_out =  blit_images(l_normal.color,l_bg.color.copy())
-        
+
+        import cv2
+        cv2.imwrite("./l_out.png", l_out)
         # plt.subplot(1,3,1)
         # plt.imshow(l_normal.color)
         # plt.subplot(1,3,2)
@@ -422,6 +425,8 @@ class Colorize(object):
         return : nxmx3 rgb colorized text-image.
         """
         bg_arr = bg_arr.copy()
+        import cv2
+        # cv2.imwrite("./bg_arr.png", bg_arr)
         if bg_arr.ndim == 2 or bg_arr.shape[2]==1: # grayscale image:
             bg_arr = np.repeat(bg_arr[:,:,None], 3, 2)
 
@@ -458,7 +463,7 @@ class Colorize(object):
             rendered.append(rdr0)
 
             bg_arr[l[0]:l[0]+w,l[1]:l[1]+h,:] = rdr0#rendered[-1]
-
+            # cv2.imwrite("./bg_arr.png", bg_arr)
 
             return bg_arr
 

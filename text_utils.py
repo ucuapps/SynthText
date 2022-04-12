@@ -17,6 +17,8 @@ import math
 from common import *
 import pickle
 
+from sampler import BarcodeSampler
+
 def sample_weighted(p_dict):
     ps = list(p_dict.keys())
     return p_dict[np.random.choice(ps,p=ps)]
@@ -88,8 +90,8 @@ class RenderFont(object):
                        1.0 : 'PARA'}
 
         ## TEXT PLACEMENT PARAMETERS:
-        self.f_shrink = 0.90
-        self.max_shrink_trials = 5 # 0.9^5 ~= 0.6
+        self.f_shrink = 0.30
+        self.max_shrink_trials = 10 # 0.9^5 ~= 0.6
         # the minimum number of characters that should fit in a mask
         # to define the maximum font height.
         self.min_nchar = 2
@@ -98,12 +100,15 @@ class RenderFont(object):
         self.p_flat = 0.10
 
         # curved baseline:
-        self.p_curved = 1.0
+        self.p_curved = 0.0
         self.baselinestate = BaselineState()
 
         # text-source : gets english text:
-        self.text_source = TextSource(min_nchar=self.min_nchar,
-                                      fn=osp.join(data_dir,'newsgroup/newsgroup.txt'))
+        sequences = []
+        for s in BarcodeSampler(100):
+            sequences.append(s)
+        self.text_source = TextSource(min_nchar=self.min_nchar, sequences = sequences)
+                                    #   fn=osp.join(data_dir,'newsgroup/newsgroup.txt'))
 
         # get font-state object:
         self.font_state = FontState(data_dir)
@@ -320,6 +325,20 @@ class RenderFont(object):
             coords[1,3,i] += bbs[i,3]
         return coords
 
+    def add_salt_and_pepper_noise(self, img):
+        number_of_pixels = random.randint(200, 500)
+        for i in range(number_of_pixels):
+            y = random.randint(0, img.shape[1] - 1)
+            x = random.randint(0, img.shape[0] - 1)
+            img[x, y] = 255
+
+        # randomly add black pixels
+        number_of_pixels = random.randint(200, 500)
+        for i in range(number_of_pixels):
+            y = random.randint(0, img.shape[1] - 1)
+            x = random.randint(0, img.shape[0] - 1)
+            img[x, y] = 0
+        return img
 
     def render_sample(self,font,mask):
         """
@@ -363,7 +382,8 @@ class RenderFont(object):
             assert nline >= 1 and nchar >= self.min_nchar
 
             # sample text:
-            text_type = sample_weighted(self.p_text)
+            # text_type = sample_weighted(self.p_text)
+            text_type = "WORD"
             text = self.text_source.sample(nline,nchar,text_type)
             if len(text)==0 or np.any([len(line)==0 for line in text]):
                 continue
@@ -513,7 +533,7 @@ class TextSource(object):
     """
     Provides text for words, paragraphs, sentences.
     """
-    def __init__(self, min_nchar, fn):
+    def __init__(self, min_nchar, sequences):
         """
         TXT_FN : path to file containing text data.
         """
@@ -522,8 +542,9 @@ class TextSource(object):
                       'LINE':self.sample_line,
                       'PARA':self.sample_para}
 
-        with open(fn,'r') as f:
-            self.txt = [l.strip() for l in f.readlines()]
+        # with open(fn,'r') as f:
+        #     self.txt = [l.strip() for l in f.readlines()]
+        self.txt = sequences
 
         # distribution over line/words for LINE/PARA:
         self.p_line_nline = np.array([0.85, 0.10, 0.05])
